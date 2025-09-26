@@ -7,7 +7,7 @@ const authRouter = Router();
 
 authRouter.post('/signup', authService.signup);
 authRouter.post('/login', authService.login);
-authRouter.post('/verify-otp',auth(), authService.verify_otp);
+authRouter.post('/confirm-email',auth(), authService.confirm_email);
 authRouter.post('/resend-otp',auth(), authService.resend_otp);
 authRouter.post('/get-access-token', authService.getAccessToken);
 authRouter.post('/forget-password', authService.forget_password);

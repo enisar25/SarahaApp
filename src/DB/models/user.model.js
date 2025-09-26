@@ -38,6 +38,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: false,
     },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    otplockUntil: {
+      type: Date,
+      required: false,
+    },
     credentialsChangedAt: {
       type: Date,
       required: false,

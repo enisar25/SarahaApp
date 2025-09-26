@@ -48,7 +48,7 @@ export const login = async (req, res, next) => {
         return next(new ValidationError('Email and password are required'));
     }
     const user = await DBservices.findOne(UserModel, { email } );
-    const isPasswordValid = await compareHash(password, user.password);
+    const isPasswordValid = compareHash(password, user.password);
 
     if (!user || !isPasswordValid) {
         return next(new UnauthorizedError('Invalid email or password'));
@@ -58,37 +58,67 @@ export const login = async (req, res, next) => {
     return successHandler(res, { access_token: access_token, refresh_token: refresh_token  }, 'login successful');
 }
 
-export const verify_otp = async(req, res, next)=>{
-    const  id  = req.user._id
-    const { otp } = req.body
+export const confirm_email = async (req, res, next) => {
+  const id = req.user._id;
+  const { otp } = req.body;
 
-    if(!otp){
-        return next(new BadRequestError('otp is required'))
+  if (!otp) {
+    return next(new BadRequestError('otp is required'));
+  }
+
+  const user = await DBservices.findById(UserModel, id);
+
+  if (!user) {
+    return next(new NotFoundError('user not found'));
+  }
+
+  if (user.isVerified) {
+    return next(new ConflictError('user already verified'));
+  }
+
+  if (user.otpLockUntil && Date.now() < user.otpLockUntil) {
+    return next(
+      new ForbiddenError(
+        `Too many failed attempts. Try again after ${new Date(user.otpLockUntil).toLocaleString()}`
+      )
+    );
+  }else if (user.otpLockUntil && Date.now() >= user.otpLockUntil) {
+    user.otpAttempts = 0;
+    user.otpLockUntil = undefined;
+    await user.save();
+  }
+
+  if (Date.now() > user.otpExpiresAt) {
+    return next(new ForbiddenError('otp expired'));
+  }
+
+  const isValidOtp = compareHash(otp, user.otp);
+
+  if (!isValidOtp) {
+    user.otpAttempts = (user.otpAttempts || 0) + 1;
+
+    if (user.otpAttempts >= 5) {
+      user.otpLockUntil = Date.now() + 1000 * 60 * 5; // 5 minutes
     }
 
-    const user = await DBservices.findById(UserModel, id)
+    await user.save();
+    return next(new ForbiddenError('Invalid OTP'));
+  }
 
-    if(!user){
-        return next(new NotFoundError('user not found'))
+  await user.updateOne({
+    isVerified: true,
+    $unset: {
+      otp: '',
+      otpExpiresAt: '',
+      otpLockUntil: '',
+      otpAttempts: '',
     }
+  });
 
-    if ( Date.now() > user.otpExpiresAt ){
-        return next(new ForbiddenError('otp expired'))
-    }
-    const isValidOtp = compareHash(otp, user.otp);
-    if (!isValidOtp) {
-      return next(new ForbiddenError('Invalid OTP'));
-    }
+  return successHandler(res, { user }, 'email confirmed');
+};
 
-    await user.updateOne({
-        isVerified: true,
-        $unset:{
-            otp:"",
-            otpExpiresAt: "",
-        }
-    })
-    return successHandler(res, {user}, 'email confirmed');
-}
+
 export const resend_otp = async(req, res, next) => {
     const id  = req.user._id
     const user = await DBservices.findById(UserModel, id)
