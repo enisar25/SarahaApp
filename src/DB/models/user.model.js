@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       required: false,
     },
+    credentialsChangedAt: {
+      type: Date,
+      required: false,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt

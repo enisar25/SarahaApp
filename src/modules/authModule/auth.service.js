@@ -2,7 +2,7 @@ import UserModel from '../../DB/models/user.model.js';
 import { successHandler } from '../../utils/succesHandler.js';
 import { hash, compareHash } from '../../utils/hash.js';
 import { encrypt } from '../../utils/encryption.js';
-import { NotFoundError, UnauthorizedError, ConflictError, ValidationError, BadRequestError } from '../../utils/errorHandler.js';
+import { NotFoundError, UnauthorizedError, ConflictError, ValidationError, BadRequestError, ForbiddenError } from '../../utils/errorHandler.js';
 import * as DBservices from '../../DB/DBservices.js';
 import jwt from 'jsonwebtoken';
 import { customAlphabet } from 'nanoid';
@@ -10,46 +10,6 @@ import { template } from '../../utils/sendMail/createHtml.js'
 import { sendMail } from '../../utils/sendMail/sendMail.js';
 
 // src/modules/authModule/auth.service.js
-
-export const getRefreshToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return next(new NotFoundError('Unauthorized'));
-    }
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, process.env.ACCESS_SECRET);
-        const user = await DBservices.findById(UserModel, decoded.id);
-        if (!user) {
-            return next(new NotFoundError('User not found'));
-        }
-        const newToken = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: process.env.REFRESH_EXPIRES_IN });
-        return successHandler(res, { refresh_token: newToken }, 'Token created successfully');
-    }
-    catch (err) {
-        return next(new UnauthorizedError('Invalid token'));
-    }   
-}
-
-export const getAccessToken = async (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return next(new NotFoundError('Unauthorized'));
-    }
-    const token = authHeader.split(' ')[1];
-    try {
-        const decoded = jwt.verify(token, process.env.REFRESH_SECRET);
-        const user = await DBservices.findById(UserModel, decoded.id);
-        if (!user) {
-            return next(new NotFoundError('User not found'));
-        }
-        const newToken = jwt.sign({ id: user._id }, process.env.ACCESS_SECRET, { expiresIn: process.env.ACCESS_EXPIRES_IN });
-        return successHandler(res, { access_token: newToken }, 'Token created successfully');
-    }
-    catch (err) {
-        return next(new UnauthorizedError('Invalid token'));
-    }   
-}
 
 export const signup = async (req, res, next) => {
     const { name, email, password, phone, age } = req.body;
@@ -99,7 +59,7 @@ export const login = async (req, res, next) => {
 }
 
 export const verify_otp = async(req, res, next)=>{
-    const { id } = req.user
+    const  id  = req.user._id
     const { otp } = req.body
 
     if(!otp){
@@ -108,22 +68,29 @@ export const verify_otp = async(req, res, next)=>{
 
     const user = await DBservices.findById(UserModel, id)
 
+    if(!user){
+        return next(new NotFoundError('user not found'))
+    }
+
     if ( Date.now() > user.otpExpiresAt ){
         return next(new ForbiddenError('otp expired'))
     }
-    if (compareHash( otp, user.otp )){
-        await user.updateOne({
-            isVerified: true,
-            $unset:{
-                otp:"",
-                otpExpiresAt: "",
-            }
-        })
+    const isValidOtp = compareHash(otp, user.otp);
+    if (!isValidOtp) {
+      return next(new ForbiddenError('Invalid OTP'));
     }
+
+    await user.updateOne({
+        isVerified: true,
+        $unset:{
+            otp:"",
+            otpExpiresAt: "",
+        }
+    })
     return successHandler(res, {user}, 'email confirmed');
 }
 export const resend_otp = async(req, res, next) => {
-    const { id } = req.user
+    const id  = req.user._id
     const user = await DBservices.findById(UserModel, id)
 
     if(!user){
@@ -135,8 +102,8 @@ export const resend_otp = async(req, res, next) => {
     const custom = customAlphabet('0123456789')
     const otp =custom(6)
     const subject = 'resend user verification'
-    const html = template( user.name, subject)
-    await sendMail(user.email,subject, html)
+    const html = template(otp, user.name, subject)
+    await sendMail(user.email, subject, html)
 
     user.otp = hash(otp)
     user.otpExpiresAt = Date.now() + 1000 * 60 * 2
@@ -182,11 +149,32 @@ export const reset_password = async(req, res, next) => {
     await user.updateOne({
             isVerified: true,
             password: hash(newPassword),
+            credentialsChangedAt: Date.now(),
             $unset:{
                 otp:"",
                 otpExpiresAt: "",
             }
         })
     return successHandler(res, {}, 'password reseted');
+}
+
+export const getAccessToken = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return next(new NotFoundError('Unauthorized'));
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+        const decoded = jwt.verify(token, process.env.REFRESH_SECRET);
+        const user = await DBservices.findById(UserModel, decoded.id);
+        if (!user) {
+            return next(new NotFoundError('User not found'));
+        }
+        const newToken = jwt.sign({ id: user._id }, process.env.ACCESS_SECRET, { expiresIn: process.env.ACCESS_EXPIRES_IN });
+        return successHandler(res, { access_token: newToken }, 'Token created successfully');
+    }
+    catch (err) {
+        return next(new UnauthorizedError('Invalid token'));
+    }   
 }
 
