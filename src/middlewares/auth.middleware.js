@@ -16,12 +16,14 @@ export const auth = () => {
     try {
       // Verify token
       const decoded = jwt.verify(token, process.env.ACCESS_SECRET);
-      console.log(decoded);
 
       // Look up user
       const user = await DBservices.findById(UserModel, decoded.id);
       if (!user) {
         return res.status(401).json({ message: 'User not found' });
+      }
+      if ( user.credentialsChangedAt && user.credentialsChangedAt > new Date(decoded.iat * 1000)) {
+        return res.status(401).json({ message: 'Token is invalid due to password change' });
       }
 
       // Attach user to request
