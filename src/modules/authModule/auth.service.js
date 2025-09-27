@@ -49,6 +49,12 @@ export const login = async (req, res, next) => {
         return next(new ValidationError('Email and password are required'));
     }
     const user = await DBservices.findOne(UserModel, { email } );
+    if(user && user.provider !== 'system' && !user.password){
+       user.provider = 'system';
+       user.password = hash(password);
+       await user.save();
+       return next(new UnauthorizedError('Login again using same credentials'));
+    }
     const isPasswordValid = compareHash(password, user.password);
 
     if (!user || !isPasswordValid) {
@@ -230,7 +236,9 @@ export const social_login = async(req, res, next) => {
             providerId: payload.sub
         });
     } else if (user.provider !== 'google') {
-        return next(new ConflictError(`Email already registered with ${user.provider}`));
+        user.provider = 'google';
+        user.providerId = payload.sub;
+        await user.save();
     }
     const access_token = jwt.sign({ id: user._id }, process.env.ACCESS_SECRET, { expiresIn: process.env.ACCESS_EXPIRES_IN });
     const refresh_token = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: process.env.REFRESH_EXPIRES_IN });
