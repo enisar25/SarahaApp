@@ -8,7 +8,7 @@ import jwt from 'jsonwebtoken';
 import { customAlphabet } from 'nanoid';
 import { template } from '../../utils/sendMail/createHtml.js'
 import { sendMail } from '../../utils/sendMail/sendMail.js';
-import { verifyGoogleIdToken } from '../../utils/verifyGoogle.js';
+import { verifyGoogleIdToken } from './verifyGoogle.js';
 
 // src/modules/authModule/auth.service.js
 
@@ -49,6 +49,10 @@ export const login = async (req, res, next) => {
         return next(new ValidationError('Email and password are required'));
     }
     const user = await DBservices.findOne(UserModel, { email } );
+    if(!user){
+        return next(new UnauthorizedError('Invalid email or password'));
+    }
+
     if(user && user.provider !== 'system' && !user.password){
        user.provider = 'system';
        user.password = hash(password);
@@ -57,7 +61,7 @@ export const login = async (req, res, next) => {
     }
     const isPasswordValid = compareHash(password, user.password);
 
-    if (!user || !isPasswordValid) {
+    if (!isPasswordValid) {
         return next(new UnauthorizedError('Invalid email or password'));
     } 
     const access_token = jwt.sign({ id: user._id}, process.env.ACCESS_SECRET, { expiresIn: process.env.ACCESS_EXPIRES_IN }); 
