@@ -1,3 +1,4 @@
+import e from "express";
 import mongoose from "mongoose";
 
 // src/DB/models/user.model.js
@@ -16,7 +17,9 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+       return this.provider === 'system';
+      },
     },
     phone: {
       type: String,
@@ -40,7 +43,8 @@ const userSchema = new mongoose.Schema(
     },
     otpAttempts: {
       type: Number,
-      default: 0,
+      default: function () { if (this.provider === 'system') return 0;
+         else return undefined; },
     },
     otplockUntil: {
       type: Date,
@@ -48,6 +52,15 @@ const userSchema = new mongoose.Schema(
     },
     credentialsChangedAt: {
       type: Date,
+      required: false,
+    },
+    provider: {
+      type: String,
+      enum: ['system', 'google'],
+      default: 'system',
+    },
+    providerId: {
+      type: String,
       required: false,
     },
   },

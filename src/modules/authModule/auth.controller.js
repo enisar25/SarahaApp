@@ -12,5 +12,6 @@ authRouter.post('/resend-otp',auth(), authService.resend_otp);
 authRouter.post('/get-access-token', authService.getAccessToken);
 authRouter.post('/forget-password', authService.forget_password);
 authRouter.post('/reset-password', authService.reset_password);
+authRouter.post('/social-login', authService.social_login);
 
 export default authRouter;

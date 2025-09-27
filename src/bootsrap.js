@@ -2,18 +2,23 @@ import connectDB  from './DB/connection.js';
 import authRouter from './modules/authModule/auth.controller.js';
 import userRouter from './modules/userModule/user.controller.js';
 import "dotenv/config.js";
+import cors from 'cors';
 
 // src/bootstrap.js
 // This file initializes the Express application, connects to the database, and sets up routes.
 
 const bootstrap = (app,express) => {
 
+    // Middleware to parse JSON and URL-encoded data
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     const PORT = process.env.PORT || 3000;
 
     // Connect to the database
     connectDB()
+
+    // CORS configuration
+    app.use(cors())
 
     //set up routes
     app.use('/auth', authRouter);

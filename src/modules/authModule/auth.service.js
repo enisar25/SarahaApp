@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { customAlphabet } from 'nanoid';
 import { template } from '../../utils/sendMail/createHtml.js'
 import { sendMail } from '../../utils/sendMail/sendMail.js';
+import { verifyGoogleIdToken } from '../../utils/verifyGoogle.js';
 
 // src/modules/authModule/auth.service.js
 
@@ -82,7 +83,7 @@ export const confirm_email = async (req, res, next) => {
         `Too many failed attempts. Try again after ${new Date(user.otpLockUntil).toLocaleString()}`
       )
     );
-  }else if (user.otpLockUntil && Date.now() >= user.otpLockUntil) {
+  } else if (user.otpLockUntil && Date.now() >= user.otpLockUntil) {
     user.otpAttempts = 0;
     user.otpLockUntil = undefined;
     await user.save();
@@ -92,30 +93,30 @@ export const confirm_email = async (req, res, next) => {
     return next(new ForbiddenError('otp expired'));
   }
 
-  const isValidOtp = compareHash(otp, user.otp);
-
+  const isValidOtp =  compareHash(otp, user.otp); 
   if (!isValidOtp) {
     user.otpAttempts = (user.otpAttempts || 0) + 1;
 
     if (user.otpAttempts >= 5) {
-      user.otpLockUntil = Date.now() + 1000 * 60 * 5; // 5 minutes
+      user.otpLockUntil = Date.now() + 1000 * 60 * 5; // lock for 5 minutes
     }
 
     await user.save();
     return next(new ForbiddenError('Invalid OTP'));
   }
 
-  await user.updateOne({
-    isVerified: true,
-    $unset: {
-      otp: '',
-      otpExpiresAt: '',
-      otpLockUntil: '',
-      otpAttempts: '',
-    }
-  });
+  const updatedUser = await DBservices.updateById(UserModel, id,
+     {
+        isVerified: true,
+        $unset: {
+         otp: "",
+         otpExpiresAt: "",
+         otpAttempts: "",
+         otpLockUntil: "" 
+        } 
+    }, { new: true });
 
-  return successHandler(res, { user }, 'email confirmed');
+  return successHandler(res, { user: updatedUser }, 'email confirmed');
 };
 
 
@@ -206,5 +207,34 @@ export const getAccessToken = async (req, res, next) => {
     catch (err) {
         return next(new UnauthorizedError('Invalid token'));
     }   
+}
+
+export const social_login = async(req, res, next) => {
+    const idToken  = req.body.idToken;
+    if (!idToken) {
+        return next(new BadRequestError('idToken is required'));
+    }
+    let payload;
+    try {
+        payload = await verifyGoogleIdToken(idToken);
+    } catch (error) {
+        return next(new UnauthorizedError('Invalid Google ID token'));
+    }
+    let user = await DBservices.findOne(UserModel, { email: payload.email });
+    if (!user) {
+        user = await DBservices.create(UserModel, {
+            name: payload.name,
+            email: payload.email,
+            isVerified: true,
+            provider: 'google',
+            providerId: payload.sub
+        });
+    } else if (user.provider !== 'google') {
+        return next(new ConflictError(`Email already registered with ${user.provider}`));
+    }
+    const access_token = jwt.sign({ id: user._id }, process.env.ACCESS_SECRET, { expiresIn: process.env.ACCESS_EXPIRES_IN });
+    const refresh_token = jwt.sign({ id: user._id }, process.env.REFRESH_SECRET, { expiresIn: process.env.REFRESH_EXPIRES_IN });
+    return successHandler(res, { access_token, refresh_token }, 'Social login successful'); 
+
 }
 
