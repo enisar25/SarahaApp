@@ -1,18 +1,31 @@
 import Joi from "joi";
+import { generalValidations } from '../../utils/general.validation.js'
+
 //src/modules/authModule/auth.validation.js
 
-export const registerSchema = Joi.object({
-  name: Joi.string().min(3).max(30).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required(),
-  phone: Joi.string().pattern(/^[0-9]{10,15}$/).optional(),
-  age: Joi.number().min(0).optional()
-});
+export const signUpSchema = Joi.object().keys({
+  name: generalValidations.name.required(),
+  email: generalValidations.email.required(),
+  age: generalValidations.age,
+  password: generalValidations.password.required(),
+  confirmPassword: generalValidations.confirmPassword.required(),
+  gender: generalValidations.gender,
+  role: generalValidations.role,
+  phone: generalValidations.phone,
+})
 
-export const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().min(6).required()
-});
-export const confirmEmailSchema = Joi.object({
-  otp: Joi.string().length(6).required()
-});
+export const loginSchema = Joi.object().keys({
+  email: generalValidations.email.required(),
+  password: generalValidations.password.required(),
+})
+
+export const confirmEmailSchema = Joi.object().keys({
+  otp:generalValidations.otp.required()
+})
+
+export const resetPasswordSchema = Joi.object().keys({
+  email: generalValidations.email.required(),
+  otp: generalValidations.otp.required(),
+  newPassword: generalValidations.password.required(),
+  confirmNewPassword: generalValidations.confirmPassword.required(),
+})

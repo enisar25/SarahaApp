@@ -1,8 +1,8 @@
-import UserModel from '../../DB/models/user.model.js';
+import UserModel, { Providers } from '../../DB/models/user.model.js';
 import { successHandler } from '../../utils/succesHandler.js';
 import { hash, compareHash } from '../../utils/hash.js';
 import { encrypt } from '../../utils/encryption.js';
-import { NotFoundError, UnauthorizedError, ConflictError, ValidationError, BadRequestError, ForbiddenError } from '../../utils/errorHandler.js';
+import { NotFoundError, UnauthorizedError, ConflictError, ValidationError, BadRequestError, ForbiddenError, ErrorHandler } from '../../utils/errorHandler.js';
 import * as DBservices from '../../DB/DBservices.js';
 import jwt from 'jsonwebtoken';
 import { customAlphabet } from 'nanoid';
@@ -26,19 +26,23 @@ export const signup = async (req, res, next) => {
     const subject = 'user verification'
     const html = template(otp, name, subject)
 
+    const mail = await sendMail(email, subject, html)
+
+    if(mail instanceof Error){
+        return next(new ErrorHandler('could not send mail'));
+    }
+
     const newUser = await DBservices.create(
         UserModel, {
              name,
              email,
-             password: hash(password),
-             phone : encrypt(phone),
+             password,
+             phone,
              age,
-             otp: hash(otp),
-             otpExpiresAt: Date.now() + 1000 * 60 * 2
+             otp,
+             otpExpiresAt: Date.now() + 1000 * 60 * 2 // 2 minutes
             }
     );
-
-    await sendMail(email, subject, html)
 
     return successHandler(res, { user: newUser }, 'User added successfully', 201);
 }
@@ -53,8 +57,8 @@ export const login = async (req, res, next) => {
         return next(new UnauthorizedError('Invalid email or password'));
     }
 
-    if(user && user.provider !== 'system' && !user.password){
-       user.provider = 'system';
+    if(user && user.provider !== Providers.system && !user.password){
+       user.provider = Providers.system;
        user.password = hash(password);
        await user.save();
        return next(new UnauthorizedError('Login again using same credentials'));
@@ -236,11 +240,11 @@ export const social_login = async(req, res, next) => {
             name: payload.name,
             email: payload.email,
             isVerified: true,
-            provider: 'google',
+            provider: Providers.google,
             providerId: payload.sub
         });
-    } else if (user.provider !== 'google') {
-        user.provider = 'google';
+    } else if (user.provider !== Providers.google) {
+        user.provider = Providers.google;
         user.providerId = payload.sub;
         await user.save();
     }

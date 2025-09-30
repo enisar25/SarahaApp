@@ -50,12 +50,20 @@ export const updateUser = async (req, res, next) => {
 }
 
 export const showUserById = async (req, res, next) => {
-    console.log(req.user._id);
-    const { id } = req.user;
-    const user = await DBservices.findById(UserModel, id);
+    const { id } = req.params;
+    const user = await DBservices.findById(UserModel, id, null, 'name email');
     if (!user) {
         return next(new NotFoundError('User not found'));
     }
     return successHandler(res, { user }, 'User fetched successfully');
 }
 
+export const shareProfile = async (req, res, next) => {
+    const id = req.user._id;
+    const user = await DBservices.findById(UserModel, id);
+    if (!user) {
+        return next(new NotFoundError('User not found'));
+    }
+    const profileLink = `${req.protocol}://${req.host}/user/${user._id}`;
+    return successHandler(res, { profileLink }, 'Profile link generated successfully');
+}
