@@ -21,6 +21,41 @@ export const Providers = {
 }
 Object.freeze(Providers)
 
+const otpSchema = new mongoose.Schema({
+  email: {
+    type: String,
+    required: false,
+    lowercase: true,
+    trim: true,
+  },
+  code: {
+    type: String,
+    required: true,
+    set(value){
+      return hash(value)
+    }
+  },
+  expiresAt: {
+    type: Date,
+    required: true,
+  },
+  attempts: {
+    type: Number,
+    default: 0,
+  },
+  resendAttempts: {
+    type: Number,
+    default: 0,
+  },
+  lockUntil: {
+    type: Date,
+    required: false,
+  }},
+   {
+    _id: false
+   },
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -64,26 +99,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    otp: {
-      type: String,
-      required: false,
-      set(value){
-        return hash(value)
-      }
-    },
-    otpExpiresAt: {
-      type: Date,
-      required: false,
-    },
-    otpAttempts: {
-      type: Number,
-      default: function () { if (this.provider === 'system') return 0;
-         else return undefined; },
-    },
-    otplockUntil: {
-      type: Date,
-      required: false,
-    },
+
+    otp: otpSchema,
+
+    resetPasswordOtp: otpSchema,
+
+    resetEmailOtp: otpSchema,
+
+    newEmailOtp: otpSchema,
+
     credentialsChangedAt: {
       type: Date,
       required: false,
