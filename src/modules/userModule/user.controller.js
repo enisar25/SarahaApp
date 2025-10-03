@@ -1,13 +1,44 @@
 import { Router } from "express";
 import * as userService from './user.service.js';
-import { auth } from "../../middlewares/auth.middleware.js";
+import { allowIf, auth } from "../../middlewares/auth.middleware.js";
+import { validation } from "../../middlewares/validation.middleware.js";
+import { updateUserSchema, userIdSchema } from "./user.validation.js";
+import { Roles } from "../../DB/models/user.model.js";
 const userRouter = Router();
 // userRouter.use(auth());
 // src/modules/userModule/user.controller.js
 
-userRouter.get('/all',auth(), userService.showUsers);
-userRouter.delete('/',auth(), userService.deleteUser);
-userRouter.patch('/',auth(), userService.updateUser);
-userRouter.get('/share-profile',auth(), userService.shareProfile);
-userRouter.get('/:id', userService.showUserById);
+userRouter.get('/all',
+    auth(),
+    userService.showUsers);
+
+userRouter.delete('/',  
+    auth(),
+    userService.deleteUser);
+
+userRouter.patch('/',
+    auth(),
+    validation(updateUserSchema),
+    userService.updateUser);
+
+userRouter.get('/share-profile',
+    auth(),
+    userService.shareProfile);
+
+userRouter.get('/:id',
+    validation(userIdSchema),
+    userService.showUserById);
+
+userRouter.delete('/soft-delete/:id',
+    auth(),
+    allowIf(Roles.admin),
+    validation(userIdSchema),
+    userService.softDeleteUser);
+
+userRouter.post('/restore/:id',
+    auth(),
+    allowIf(Roles.admin),
+    validation(userIdSchema),
+    userService.restoreUser);
+
 export default userRouter; 

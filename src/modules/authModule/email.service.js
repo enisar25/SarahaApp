@@ -5,8 +5,6 @@ import { NotFoundError, UnauthorizedError, ConflictError, ValidationError, BadRe
 import * as DBservices from '../../DB/DBservices.js';
 import { template } from '../../utils/sendMail/createHtml.js'
 import { sendMail , createOtp } from '../../utils/sendMail/sendMail.js';
-import e from 'cors';
-
 // src/modules/authModule/email.service.js
 
 export const confirm_email = async (req, res, next) => {

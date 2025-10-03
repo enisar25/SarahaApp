@@ -23,7 +23,7 @@ export const auth = () => {
         return res.status(401).json({ message: 'User not found' });
       }
       if ( user.credentialsChangedAt && user.credentialsChangedAt > new Date(decoded.iat * 1000)) {
-        return res.status(401).json({ message: 'Token is invalid due to password change' });
+        return res.status(401).json({ message: 'Token is invalid due to changed credentials' });
       }
 
       // Attach user to request
@@ -34,3 +34,12 @@ export const auth = () => {
     }
   };
 };
+
+export const allowIf = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    next();
+  }
+}

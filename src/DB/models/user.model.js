@@ -121,6 +121,16 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    deleted: {
+      deletedAt: {
+         type: Date,
+         default: null
+         },
+      deletedBy: {
+         type : ObjectId,
+          default: null
+        } 
+    }
   },
   {
     timestamps: true, // Adds createdAt and updatedAt

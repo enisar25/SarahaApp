@@ -67,3 +67,43 @@ export const shareProfile = async (req, res, next) => {
     const profileLink = `${req.protocol}://${req.host}/user/${user._id}`;
     return successHandler(res, { profileLink }, 'Profile link generated successfully');
 }
+
+export const softDeleteUser = async (req, res, next) => {
+  const { id } = req.params;
+  const updatedUser = await DBservices.updateById( UserModel, id,
+    {
+      'deleted.deletedAt': new Date(),
+      'deleted.deletedBy': req.user._id,
+    },
+    { new: true }
+  );
+
+  if (!updatedUser) {
+    return next(new NotFoundError('User not found'));
+  }
+
+  return successHandler(res, {}, 'User soft deleted');
+};
+
+export const restoreUser = async (req, res, next) => {
+    const { id } = req.params;
+    user = DBservices.findDeleted(UserModel, id);
+
+    if (!user) {
+      return next(new NotFoundError('User not found or not deleted'));
+    }
+
+    if (user.deleted.deletedBy != req.user._id) {
+        return next(new UnauthorizedError('You are not authorized to restore this user'));
+    }
+
+    const restoredUser = await DBservices.updateById( UserModel, id,
+      {
+        'deleted.deletedAt': null,
+        'deleted.deletedBy': null,
+      },
+      { new: true }
+    );
+
+    return successHandler(res, { user: restoredUser }, 'User restored successfully');
+}

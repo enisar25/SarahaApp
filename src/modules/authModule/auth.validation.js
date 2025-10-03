@@ -23,9 +23,22 @@ export const confirmEmailSchema = Joi.object().keys({
   otp:generalValidations.otp.required()
 })
 
-export const resetPasswordSchema = Joi.object().keys({
+export const forgetPassSchema = Joi.object().keys({
+  email: generalValidations.email.required()
+})
+
+export const resetPassSchema = Joi.object().keys({
   email: generalValidations.email.required(),
   otp: generalValidations.otp.required(),
   newPassword: generalValidations.password.required(),
   confirmNewPassword: generalValidations.confirmPassword.required(),
+})
+
+export const emailUpdateSchema = Joi.object().keys({
+  newEmail: generalValidations.email.required(),
+})
+
+export const confirmEmailUpdateSchema = Joi.object().keys({
+  otp: generalValidations.otp.required(),
+  newEmail: generalValidations.email.required(),
 })

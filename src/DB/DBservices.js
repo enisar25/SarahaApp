@@ -28,7 +28,14 @@ export const findAll = async (model, populate = null, select = null) => {
 };
 
 export const findById = async (model, id, populate = null, select = null) => {
-  let query = model.findById(id);
+  let query = model.findOne({ _id: id , 'deleted.deletedAt': null });
+  if (select) query = query.select(select);
+  if (populate) query = query.populate(populate);
+  return await query;
+};
+
+export const findDeleted = async (model, id, populate = null, select = null) => {
+  let query = model.findOne({ _id: id, 'deleted.deletedAt': { $ne: null }, });
   if (select) query = query.select(select);
   if (populate) query = query.populate(populate);
   return await query;
