@@ -1,7 +1,6 @@
 import mongoose from "mongoose";
 import { encrypt, decrypt } from "../../utils/encryption.js";
 import { hash } from "../../utils/hash.js"
-
 // src/DB/models/user.model.js
 // Mongoose schema and model for users
 
@@ -121,15 +120,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    profileImage: {
+      type: String,
+      required: false,
+    },
     deleted: {
       deletedAt: {
-         type: Date,
-         default: null
-         },
-      deletedBy: {
-         type : ObjectId,
-          default: null
-        } 
+        type: Date,
+      },
+    deletedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',  
+      }
     }
   },
   {

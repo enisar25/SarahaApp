@@ -12,7 +12,7 @@ const checkId = (value, helpers) => {
 }
 
 export const generalValidations = {
-  name: Joi.string().min(3).max(9),
+  name: Joi.string().min(3).max(18),
   email: Joi.string().email(),
   age: Joi.number().min(18).max(50),
   password: Joi.string().min(8).max(20),

@@ -2,6 +2,8 @@ import UserModel from '../../DB/models/user.model.js';
 import { successHandler } from '../../utils/succesHandler.js';
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from '../../utils/errorHandler.js';
 import * as DBservices from '../../DB/DBservices.js';
+import path from 'path';
+import fs from 'fs/promises';
 
  
 // src/modules/userModule/user.service.js
@@ -106,4 +108,33 @@ export const restoreUser = async (req, res, next) => {
     );
 
     return successHandler(res, { user: restoredUser }, 'User restored successfully');
+}
+
+export const uploadProfileImage = async (req, res, next) => {
+    if (!req.file) {
+        return next(new ValidationError('No file uploaded'));
+    }
+    const { id } = req.user;
+    const imagePath = path.join(req.file.destination, req.file.filename).replace(/\\/g, '/');
+    const user = await DBservices.findById(UserModel, id);
+
+    if (user.profileImage) {
+        try {
+            await fs.unlink(user.profileImage);
+        } catch (err) {
+            console.error('Error deleting old profile image:', err);
+        }
+    } 
+    await DBservices.updateById(UserModel, id, { profileImage: imagePath }, { new: true });
+    return successHandler(res , 'Profile image updated');
+}
+
+export const getProfileImage = async (req, res, next) => {
+    const { id } = req.user;
+    const user = await DBservices.findById(UserModel, id);
+    if (!user || !user.profileImage) {
+        return next(new NotFoundError('Profile image not found'));
+    }
+    const imageLink = `${req.protocol}://${req.host}/${user.profileImage}`;
+    return successHandler(res, { imageLink }, 'Profile image fetched successfully');
 }

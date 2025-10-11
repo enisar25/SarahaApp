@@ -4,6 +4,7 @@ import { allowIf, auth } from "../../middlewares/auth.middleware.js";
 import { validation } from "../../middlewares/validation.middleware.js";
 import { updateUserSchema, userIdSchema } from "./user.validation.js";
 import { Roles } from "../../DB/models/user.model.js";
+import { uploadfile } from "../../utils/multer/multer.js";
 const userRouter = Router();
 // userRouter.use(auth());
 // src/modules/userModule/user.controller.js
@@ -25,9 +26,6 @@ userRouter.get('/share-profile',
     auth(),
     userService.shareProfile);
 
-userRouter.get('/:id',
-    validation(userIdSchema),
-    userService.showUserById);
 
 userRouter.delete('/soft-delete/:id',
     auth(),
@@ -40,5 +38,18 @@ userRouter.post('/restore/:id',
     allowIf(Roles.admin),
     validation(userIdSchema),
     userService.restoreUser);
+
+userRouter.patch('/profile-image',
+    auth(),
+    uploadfile('profile_images').single('profileImage'),
+    userService.uploadProfileImage);
+
+userRouter.get('/profile-image',
+    auth(),
+    userService.getProfileImage);
+
+userRouter.get('/:id',
+    validation(userIdSchema),
+    userService.showUserById);
 
 export default userRouter; 
