@@ -2,9 +2,9 @@ import { Router } from "express";
 import * as userService from './user.service.js';
 import { allowIf, auth } from "../../middlewares/auth.middleware.js";
 import { validation } from "../../middlewares/validation.middleware.js";
-import { updateUserSchema, userIdSchema } from "./user.validation.js";
+import { profileImageSchema, updateUserSchema, userIdSchema } from "./user.validation.js";
 import { Roles } from "../../DB/models/user.model.js";
-import { uploadfile } from "../../utils/multer/multer.js";
+import { ALLOWED_FILE_TYPES, uploadfile } from "../../utils/multer/multer.js";
 const userRouter = Router();
 // userRouter.use(auth());
 // src/modules/userModule/user.controller.js
@@ -41,7 +41,8 @@ userRouter.post('/restore/:id',
 
 userRouter.patch('/profile-image',
     auth(),
-    uploadfile('profile_images').single('profileImage'),
+    uploadfile('profile_images', ALLOWED_FILE_TYPES.image).single('profileImage'),
+    validation(profileImageSchema),
     userService.uploadProfileImage);
 
 userRouter.get('/profile-image',

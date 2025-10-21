@@ -13,3 +13,14 @@ export const updateUserSchema = Joi.object().keys({
 export const userIdSchema = Joi.object().keys({
   id: generalValidations.id.required()
 })
+
+export const profileImageSchema = Joi.object().keys({
+  fieldname: generalValidations.fieldname.required(),
+  originalname: generalValidations.originalname.required(),
+  encoding: generalValidations.encoding.required(),
+  mimetype: generalValidations.mimetype.required(),
+  destination: generalValidations.destination.required(),
+  filename: generalValidations.filename.required(),
+  size: generalValidations.size.required(),
+  path: generalValidations.path.required(),
+})
