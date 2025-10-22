@@ -4,9 +4,11 @@ import { allowIf, auth } from "../../middlewares/auth.middleware.js";
 import { validation } from "../../middlewares/validation.middleware.js";
 import { profileImageSchema, updateUserSchema, userIdSchema } from "./user.validation.js";
 import { Roles } from "../../DB/models/user.model.js";
-import { ALLOWED_FILE_TYPES, uploadfile } from "../../utils/multer/multer.js";
+import { uploadFileCloud } from "../../utils/multer/multer.cloud.js";
+// import { uploadFileLocal } from "../../utils/multer/multer.local.js";
+// import { storeFile } from "../../middlewares/storeFile.middleware.js";
+
 const userRouter = Router();
-// userRouter.use(auth());
 // src/modules/userModule/user.controller.js
 
 userRouter.get('/all',
@@ -41,13 +43,21 @@ userRouter.post('/restore/:id',
 
 userRouter.patch('/profile-image',
     auth(),
-    uploadfile('profile_images', ALLOWED_FILE_TYPES.image).single('profileImage'),
+    // uploadFileLocal('image').single('profileImage'),
+    uploadFileCloud(ALLOWED_FILE_TYPES.video).single('profileImage'),
     validation(profileImageSchema),
+    // storeFile('profileImage'),
     userService.uploadProfileImage);
 
 userRouter.get('/profile-image',
     auth(),
     userService.getProfileImage);
+
+userRouter.patch('/cover-images',
+    auth(),
+    // uploadFileLocal('cover_images', 'image').array('coverImages', 5),
+    uploadFileCloud('image').array('coverImages', 5),
+    userService.uploadCoverImages);
 
 userRouter.get('/:id',
     validation(userIdSchema),

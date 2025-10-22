@@ -19,8 +19,9 @@ export const profileImageSchema = Joi.object().keys({
   originalname: generalValidations.originalname.required(),
   encoding: generalValidations.encoding.required(),
   mimetype: generalValidations.mimetype.required(),
-  destination: generalValidations.destination.required(),
-  filename: generalValidations.filename.required(),
+  // destination: generalValidations.destination.required(),
+  // filename: generalValidations.filename.required(),
   size: generalValidations.size.required(),
-  path: generalValidations.path.required(),
+  buffer: generalValidations.buffer.required(),
+  // path: generalValidations.path.required(),
 })

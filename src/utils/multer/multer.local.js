@@ -1,6 +1,4 @@
 import multer from 'multer';
-import { nanoid } from 'nanoid';
-import fs from 'fs/promises';
 
 export const ALLOWED_FILE_TYPES = {
   image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
@@ -8,21 +6,8 @@ export const ALLOWED_FILE_TYPES = {
   video: ['video/mp4', 'video/mpeg', 'video/quicktime']
 };
 
-export const uploadfile = (folderName = 'general', filter = null) => {
-  const storage = multer.diskStorage({
-    destination: async (req, file, cb) => {
-      try {
-        const uploadPath = `./uploads/${folderName}/${req.user?. _id || 'public'}`;
-        await fs.mkdir(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-      } catch (err) {
-        cb(err);
-      }
-    },
-    filename: (req, file, cb) => {
-      cb(null, `${nanoid(7)}_${file.originalname}`);
-    }
-  });
+export const uploadFileLocal = (filter = null,req) => {
+  const storage = multer.memoryStorage({});
 
   const limits = { fileSize: 10 * 1024 * 1024 }; // 10MB limit (adjust)
   const fileFilter = (req, file, cb) => {

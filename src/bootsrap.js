@@ -3,7 +3,7 @@ import authRouter from './modules/authModule/auth.controller.js';
 import userRouter from './modules/userModule/user.controller.js';
 import "dotenv/config.js";
 import cors from 'cors';
-import { uploadfile } from './utils/multer/multer.js';
+import { uploadFileLocal } from './utils/multer/multer.local.js';
 
 // src/bootstrap.js
 // This file initializes the Express application, connects to the database, and sets up routes.
@@ -22,7 +22,7 @@ const bootstrap = (app,express) => {
     app.use(cors())
 
     // File upload endpoint for testing
-    app.post('/upload-file', uploadfile().single('file'), (req, res) => {
+    app.post('/upload-file', uploadFileLocal().single('file'), (req, res) => {
     console.log('req.file:', req.file);
     if (!req.file) return res.status(400).json({ ok: false, message: 'No file received' });
     res.json({ ok: true, file: req.file });

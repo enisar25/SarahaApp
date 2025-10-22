@@ -31,5 +31,6 @@ export const generalValidations = {
   destination: Joi.string(),
   filename: Joi.string(),
   path: Joi.string(),
-  size: Joi.number().max(10 * 1024 * 1024) // 10MB,
+  size: Joi.number().max(10 * 1024 * 1024), // 10MB
+  buffer: Joi.any(),
 }

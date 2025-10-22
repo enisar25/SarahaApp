@@ -120,15 +120,25 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    /*//LINKED TO MULTER LOCAL UPLOAD
     profileImage: {
       type: String,
       required: false,
+    },*/
+    //LINKED TO CLOUDINARY UPLOAD
+    profileImage: {
+      secureUrl: { type: String },
+      publicId: { type: String }
     },
+    coverImages: [
+      {
+        secureUrl: { type: String },
+        publicId: { type: String }
+      }
+    ],
     deleted: {
-      deletedAt: {
-        type: Date,
-      },
-    deletedBy: {
+      deletedAt: { type: Date },
+      deletedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',  
       }

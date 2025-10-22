@@ -2,8 +2,10 @@ import UserModel from '../../DB/models/user.model.js';
 import { successHandler } from '../../utils/succesHandler.js';
 import { ConflictError, ForbiddenError, NotFoundError, UnauthorizedError, ValidationError } from '../../utils/errorHandler.js';
 import * as DBservices from '../../DB/DBservices.js';
-import path from 'path';
-import fs from 'fs/promises';
+import cloudinary from '../../utils/multer/cloudConfig.js';
+import { deleteFromCloud, uploadMultipleToCloud, uploadSingleToCloud } from '../../utils/multer/cloudServices.js';
+// import path from 'path';
+// import fs from 'fs/promises';
 
  
 // src/modules/userModule/user.service.js
@@ -110,6 +112,8 @@ export const restoreUser = async (req, res, next) => {
     return successHandler(res, { user: restoredUser }, 'User restored successfully');
 }
 
+
+/*//upload profile image locally
 export const uploadProfileImage = async (req, res, next) => {
     if (!req.file) {
         return next(new ValidationError('No file uploaded'));
@@ -127,14 +131,55 @@ export const uploadProfileImage = async (req, res, next) => {
     } 
     await DBservices.updateById(UserModel, id, { profileImage: imagePath }, { new: true });
     return successHandler(res , 'Profile image updated');
+}*/
+
+export const uploadProfileImage = async (req, res, next) => {
+    if (!req.file) {
+        return next(new ValidationError('No file uploaded'));
+    }
+
+    if(req.user.profileImage.publicId) {
+       await deleteFromCloud(req.user.profileImage.publicId);
+    }
+
+    const { secure_url, public_id } = await uploadSingleToCloud(req.file.path, `profile_images/${req.user._id}`);
+
+    await DBservices.updateById(UserModel, req.user._id, 
+        { profileImage: { secureUrl: secure_url, publicId: public_id } }, 
+        { new: true }
+    );
+
+    return successHandler(res , 'Profile image updated');
 }
 
 export const getProfileImage = async (req, res, next) => {
     const { id } = req.user;
     const user = await DBservices.findById(UserModel, id);
-    if (!user || !user.profileImage) {
+    if (!user || !user.profileImage.secureUrl) {
         return next(new NotFoundError('Profile image not found'));
     }
-    const imageLink = `${req.protocol}://${req.host}/${user.profileImage}`;
+    //Linked to local upload
+    // const imageLink = `${req.protocol}://${req.host}/${user.profileImage}`;
+
+    const imageLink = user.profileImage.secureUrl;
     return successHandler(res, { imageLink }, 'Profile image fetched successfully');
 }
+
+export const uploadCoverImages = async (req, res, next) => {
+    if (!req.files || req.files.length === 0) {
+        return next(new ValidationError('No files uploaded'));
+    }
+
+    const paths = req.files.map( file => file.path );
+    const upload = await uploadMultipleToCloud( paths, `cover_images/${req.user._id}` );
+    let coverImages = upload.map(({ secure_url, public_id }) => ({ secureUrl: secure_url, publicId: public_id }));
+    if (req.user.coverImages && req.user.coverImages.length > 0) {
+        coverImages.push(...req.user.coverImages);
+    }
+    const updated = await DBservices.updateById(UserModel, req.user._id,
+        { coverImages },
+        { new: true }
+    );
+    return successHandler(res, {user : updated},'Cover images uploaded successfully');
+}
+
