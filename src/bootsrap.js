@@ -4,6 +4,9 @@ import userRouter from './modules/userModule/user.controller.js';
 import messageRouter from './modules/messageModule/message.controller.js';
 import "dotenv/config.js";
 import cors from 'cors';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { uploadFileLocal } from './utils/multer/multer.local.js';
 
 // src/bootstrap.js
@@ -21,6 +24,17 @@ const bootstrap = (app,express) => {
 
     // CORS configuration
     app.use(cors())
+
+    //Morgan configuration
+    app.use(morgan('short'))
+
+    //helmet configuration
+    app.use(helmet())
+
+    //express-rate-limit
+    app.use(rateLimit({
+        limit: 10
+    }))
 
     // File upload endpoint for testing
     app.post('/upload-file', uploadFileLocal().single('file'), (req, res) => {
