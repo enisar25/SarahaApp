@@ -12,6 +12,7 @@ Object.freeze(Gender)
 export const Roles = {
   user: 'user',
   admin: 'admin',
+  guest: 'guest',
 }
 Object.freeze(Roles)
 export const Providers = {

@@ -44,7 +44,7 @@ userRouter.post('/restore/:id',
 userRouter.patch('/profile-image',
     auth(),
     // uploadFileLocal('image').single('profileImage'),
-    uploadFileCloud(ALLOWED_FILE_TYPES.video).single('profileImage'),
+    uploadFileCloud('image').single('profileImage'),
     validation(profileImageSchema),
     // storeFile('profileImage'),
     userService.uploadProfileImage);

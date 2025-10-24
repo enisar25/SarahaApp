@@ -1,6 +1,7 @@
 import connectDB  from './DB/connection.js';
 import authRouter from './modules/authModule/auth.controller.js';
 import userRouter from './modules/userModule/user.controller.js';
+import messageRouter from './modules/messageModule/message.controller.js';
 import "dotenv/config.js";
 import cors from 'cors';
 import { uploadFileLocal } from './utils/multer/multer.local.js';
@@ -32,6 +33,7 @@ const bootstrap = (app,express) => {
     app.use('/uploads', express.static('uploads'));
     app.use('/auth', authRouter);
     app.use('/users', userRouter);
+    app.use('/messages', messageRouter);
 
     // 404 handler
     app.all('/{*any}', (req, res) => {
